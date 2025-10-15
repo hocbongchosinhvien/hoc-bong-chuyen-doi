@@ -12,6 +12,12 @@ import MyList from "./pages/MyList";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ApplyWizard from "./pages/ApplyWizard";
+import UserDashboard from "./pages/dashboard/user/UserDashboard";
+import MyApplications from "./pages/dashboard/user/MyApplications";
+import UserProfile from "./pages/dashboard/user/UserProfile";
+import PartnerDashboard from "./pages/dashboard/partner/PartnerDashboard";
+import SubmitOpportunity from "./pages/dashboard/partner/SubmitOpportunity";
+import MySubmissions from "./pages/dashboard/partner/MySubmissions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +39,17 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/apply/:id" element={<ApplyWizard />} />
+              
+              {/* User Dashboard */}
+              <Route path="/dashboard/user" element={<UserDashboard />} />
+              <Route path="/dashboard/user/applications" element={<MyApplications />} />
+              <Route path="/dashboard/user/profile" element={<UserProfile />} />
+              
+              {/* Partner Dashboard */}
+              <Route path="/dashboard/partner" element={<PartnerDashboard />} />
+              <Route path="/dashboard/partner/submit" element={<SubmitOpportunity />} />
+              <Route path="/dashboard/partner/submissions" element={<MySubmissions />} />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
