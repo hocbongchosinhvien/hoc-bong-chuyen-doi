@@ -18,6 +18,13 @@ import UserProfile from "./pages/dashboard/user/UserProfile";
 import PartnerDashboard from "./pages/dashboard/partner/PartnerDashboard";
 import SubmitOpportunity from "./pages/dashboard/partner/SubmitOpportunity";
 import MySubmissions from "./pages/dashboard/partner/MySubmissions";
+import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
+import ManageOpportunities from "./pages/dashboard/admin/ManageOpportunities";
+import ReviewQueue from "./pages/dashboard/admin/ReviewQueue";
+import ManagePartners from "./pages/dashboard/admin/ManagePartners";
+import Notifications from "./pages/dashboard/admin/Notifications";
+import Analytics from "./pages/dashboard/admin/Analytics";
+import AdminProfile from "./pages/dashboard/admin/AdminProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +56,15 @@ const App = () => (
               <Route path="/dashboard/partner" element={<PartnerDashboard />} />
               <Route path="/dashboard/partner/submit" element={<SubmitOpportunity />} />
               <Route path="/dashboard/partner/submissions" element={<MySubmissions />} />
+              
+              {/* Admin Dashboard */}
+              <Route path="/dashboard/admin" element={<AdminDashboard />} />
+              <Route path="/dashboard/admin/opportunities" element={<ManageOpportunities />} />
+              <Route path="/dashboard/admin/review" element={<ReviewQueue />} />
+              <Route path="/dashboard/admin/partners" element={<ManagePartners />} />
+              <Route path="/dashboard/admin/notifications" element={<Notifications />} />
+              <Route path="/dashboard/admin/analytics" element={<Analytics />} />
+              <Route path="/dashboard/admin/profile" element={<AdminProfile />} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
