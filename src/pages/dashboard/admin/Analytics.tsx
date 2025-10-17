@@ -16,8 +16,10 @@ const Analytics = () => {
     { label: "Quản lý cơ hội", path: "/dashboard/admin/opportunities", icon: FileText },
     { label: "Duyệt bài đăng", path: "/dashboard/admin/review", icon: AlertCircle },
     { label: "Quản lý đối tác", path: "/dashboard/admin/partners", icon: Users },
+    { label: "Quản lý người dùng", path: "/dashboard/admin/users", icon: Users },
     { label: "Thông báo", path: "/dashboard/admin/notifications", icon: CheckCircle },
     { label: "Phân tích", path: "/dashboard/admin/analytics", icon: TrendingUp },
+    { label: "Hồ sơ", path: "/dashboard/admin/profile", icon: Users },
   ];
 
   const topOpportunities = [
