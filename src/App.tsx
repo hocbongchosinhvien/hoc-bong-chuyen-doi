@@ -11,6 +11,7 @@ import OpportunityDetail from "./pages/OpportunityDetail";
 import MyList from "./pages/MyList";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import ApplyWizard from "./pages/ApplyWizard";
 import UserDashboard from "./pages/dashboard/user/UserDashboard";
 import MyApplications from "./pages/dashboard/user/MyApplications";
@@ -18,10 +19,13 @@ import UserProfile from "./pages/dashboard/user/UserProfile";
 import PartnerDashboard from "./pages/dashboard/partner/PartnerDashboard";
 import SubmitOpportunity from "./pages/dashboard/partner/SubmitOpportunity";
 import MySubmissions from "./pages/dashboard/partner/MySubmissions";
+import PartnerProfile from "./pages/dashboard/partner/PartnerProfile";
+import PartnerAnalytics from "./pages/dashboard/partner/PartnerAnalytics";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import ManageOpportunities from "./pages/dashboard/admin/ManageOpportunities";
 import ReviewQueue from "./pages/dashboard/admin/ReviewQueue";
 import ManagePartners from "./pages/dashboard/admin/ManagePartners";
+import ManageUsers from "./pages/dashboard/admin/ManageUsers";
 import Notifications from "./pages/dashboard/admin/Notifications";
 import Analytics from "./pages/dashboard/admin/Analytics";
 import AdminProfile from "./pages/dashboard/admin/AdminProfile";
@@ -45,6 +49,7 @@ const App = () => (
               <Route path="/my-list" element={<MyList />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/apply/:id" element={<ApplyWizard />} />
               
               {/* User Dashboard */}
@@ -56,12 +61,15 @@ const App = () => (
               <Route path="/dashboard/partner" element={<PartnerDashboard />} />
               <Route path="/dashboard/partner/submit" element={<SubmitOpportunity />} />
               <Route path="/dashboard/partner/submissions" element={<MySubmissions />} />
+              <Route path="/dashboard/partner/profile" element={<PartnerProfile />} />
+              <Route path="/dashboard/partner/analytics" element={<PartnerAnalytics />} />
               
               {/* Admin Dashboard */}
               <Route path="/dashboard/admin" element={<AdminDashboard />} />
               <Route path="/dashboard/admin/opportunities" element={<ManageOpportunities />} />
               <Route path="/dashboard/admin/review" element={<ReviewQueue />} />
               <Route path="/dashboard/admin/partners" element={<ManagePartners />} />
+              <Route path="/dashboard/admin/users" element={<ManageUsers />} />
               <Route path="/dashboard/admin/notifications" element={<Notifications />} />
               <Route path="/dashboard/admin/analytics" element={<Analytics />} />
               <Route path="/dashboard/admin/profile" element={<AdminProfile />} />
