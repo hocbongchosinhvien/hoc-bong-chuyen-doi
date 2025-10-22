@@ -159,22 +159,12 @@ const OpportunityDetail = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 md:col-span-2">
                       <DollarSign className="mt-1 h-5 w-5 shrink-0 text-primary" />
                       <div>
                         <p className="mb-1 text-sm font-semibold">Quyền lợi</p>
                         <p className="text-sm text-muted-foreground">
                           {opportunity.benefits}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 md:col-span-2">
-                      <GraduationCap className="mt-1 h-5 w-5 shrink-0 text-primary" />
-                      <div>
-                        <p className="mb-1 text-sm font-semibold">Quy trình</p>
-                        <p className="text-sm text-muted-foreground">
-                          {opportunity.process}
                         </p>
                       </div>
                     </div>
@@ -248,16 +238,6 @@ const OpportunityDetail = () => {
                     <Bell className="mr-2 h-5 w-5" />
                     Đặt nhắc hạn
                   </Button>
-                  <Link to="/apply/1">
-                    <Button
-                      className="w-full"
-                      variant="secondary"
-                      size="lg"
-                    >
-                      <ExternalLink className="mr-2 h-5 w-5" />
-                      Bắt đầu nộp hồ sơ
-                    </Button>
-                  </Link>
                 </CardContent>
               </Card>
 
