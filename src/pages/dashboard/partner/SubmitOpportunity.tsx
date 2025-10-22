@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MultiSelectInput } from "@/components/ui/multi-select-input";
 import {
   Select,
   SelectContent,
@@ -22,9 +23,12 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const SubmitOpportunity = () => {
   const navigate = useNavigate();
+  const [fields, setFields] = useState<string[]>([]);
+  const [levels, setLevels] = useState<string[]>([]);
 
   const menuItems = [
     { label: "Dashboard", path: "/dashboard/partner", icon: LayoutDashboard },
@@ -32,6 +36,27 @@ const SubmitOpportunity = () => {
     { label: "Cơ hội đã đăng", path: "/dashboard/partner/submissions", icon: FileText },
     { label: "Phân tích", path: "/dashboard/partner/analytics", icon: BarChart3 },
     { label: "Hồ sơ tổ chức", path: "/dashboard/partner/profile", icon: User },
+  ];
+
+  const fieldSuggestions = [
+    "CNTT",
+    "Kinh tế",
+    "Kỹ thuật",
+    "Y khoa",
+    "Luật",
+    "Giáo dục",
+    "Nghệ thuật",
+    "Khoa học tự nhiên",
+    "Khoa học xã hội",
+    "Nông nghiệp",
+  ];
+
+  const levelSuggestions = [
+    "Đại học",
+    "Thạc sĩ",
+    "Tiến sĩ",
+    "Cao đẳng",
+    "Trung cấp",
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,54 +97,44 @@ const SubmitOpportunity = () => {
                 />
               </div>
 
-              {/* Type and Category */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="type">
-                    Loại <span className="text-destructive">*</span>
-                  </Label>
-                  <Select required>
-                    <SelectTrigger id="type">
-                      <SelectValue placeholder="Chọn loại" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="scholarship">Học bổng</SelectItem>
-                      <SelectItem value="contest">Cuộc thi</SelectItem>
-                      <SelectItem value="ambassador">Đại sứ</SelectItem>
-                      <SelectItem value="internship">Thực tập</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Type */}
+              <div className="space-y-2">
+                <Label htmlFor="type">
+                  Loại <span className="text-destructive">*</span>
+                </Label>
+                <Select required>
+                  <SelectTrigger id="type">
+                    <SelectValue placeholder="Chọn loại" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scholarship">Học bổng</SelectItem>
+                    <SelectItem value="contest">Cuộc thi</SelectItem>
+                    <SelectItem value="ambassador">Đại sứ</SelectItem>
+                    <SelectItem value="internship">Thực tập</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="field">Ngành học</Label>
-                  <Select>
-                    <SelectTrigger id="field">
-                      <SelectValue placeholder="Chọn ngành" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="it">CNTT</SelectItem>
-                      <SelectItem value="business">Kinh tế</SelectItem>
-                      <SelectItem value="engineering">Kỹ thuật</SelectItem>
-                      <SelectItem value="medicine">Y khoa</SelectItem>
-                      <SelectItem value="other">Khác</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Fields */}
+              <div className="space-y-2">
+                <Label htmlFor="field">Ngành học</Label>
+                <MultiSelectInput
+                  value={fields}
+                  onChange={setFields}
+                  placeholder="Chọn hoặc nhập ngành học..."
+                  suggestions={fieldSuggestions}
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="level">Bậc học</Label>
-                  <Select>
-                    <SelectTrigger id="level">
-                      <SelectValue placeholder="Chọn bậc" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="undergraduate">Đại học</SelectItem>
-                      <SelectItem value="master">Thạc sĩ</SelectItem>
-                      <SelectItem value="phd">Tiến sĩ</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Levels */}
+              <div className="space-y-2">
+                <Label htmlFor="level">Bậc học</Label>
+                <MultiSelectInput
+                  value={levels}
+                  onChange={setLevels}
+                  placeholder="Chọn hoặc nhập bậc học..."
+                  suggestions={levelSuggestions}
+                />
               </div>
 
               {/* Location and Deadline */}
@@ -186,36 +201,20 @@ const SubmitOpportunity = () => {
                 />
               </div>
 
-              {/* Benefits */}
+              {/* External Link - Disabled */}
               <div className="space-y-2">
-                <Label htmlFor="benefits">Quyền lợi</Label>
-                <Textarea
-                  id="benefits"
-                  placeholder="VD: Học phí toàn phần, trợ cấp sinh hoạt..."
-                  rows={4}
-                />
-              </div>
-
-              {/* Application Process */}
-              <div className="space-y-2">
-                <Label htmlFor="process">Quy trình nộp hồ sơ</Label>
-                <Textarea
-                  id="process"
-                  placeholder="VD: Bước 1: Nộp hồ sơ online, Bước 2: Phỏng vấn..."
-                  rows={4}
-                />
-              </div>
-
-              {/* External Link */}
-              <div className="space-y-2">
-                <Label htmlFor="link">Link Blogspot/Website chính thức</Label>
+                <Label htmlFor="link" className="text-muted-foreground">
+                  Link Blogspot/Website chính thức
+                </Label>
                 <Input
                   id="link"
                   type="url"
-                  placeholder="https://example.blogspot.com/scholarship"
+                  placeholder="Sẽ được thêm sau khi admin duyệt"
+                  disabled
+                  className="cursor-not-allowed opacity-50"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Link này sẽ hiển thị khi sinh viên nhấn "Apply"
+                  Link này sẽ được admin thêm sau khi duyệt
                 </p>
               </div>
 
