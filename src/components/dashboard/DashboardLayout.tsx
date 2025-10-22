@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MenuItem {
   label: string;
@@ -41,6 +43,34 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // ----- Auth (để hiện đúng tên/ảnh sau khi cập nhật hồ sơ)
+  const { user } = useAuth();
+  const [u, setU] = useState(user);
+
+  useEffect(() => {
+    const refresh = async () => {
+      const { data } = await supabase.auth.getUser();
+      setU(data.user ?? null);
+    };
+    refresh();
+  }, [user]);
+
+  const meta: any = u?.user_metadata || {};
+  const displayName =
+    meta.full_name ||
+    meta.name ||
+    [meta.given_name, meta.family_name].filter(Boolean).join(" ") ||
+    u?.email ||
+    "";
+  const avatarUrl = meta.avatar_url || meta.picture || "";
+  const initials = (() => {
+    const name = displayName || "U";
+    const parts = name.trim().split(/\s+/);
+    if (!parts.length) return "U";
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  })();
+
   const isActive = (path: string) => location.pathname === path;
 
   const getRoleName = () => {
@@ -52,6 +82,13 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
       case "admin":
         return "Quản trị viên";
     }
+  };
+
+  const goProfile = () => navigate(`/dashboard/${role}/profile`);
+  const goSettings = () => navigate(`/dashboard/${role}`);
+  const logout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
   };
 
   return (
@@ -181,12 +218,10 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
               <Menu className="h-5 w-5" />
             </Button>
 
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm..."
-                className="w-64 pl-10 lg:w-80"
-              />
+            {/* Search bar (giữ để tránh import thừa) */}
+            <div className="hidden md:flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Tìm kiếm..." className="w-72" />
             </div>
           </div>
 
@@ -196,31 +231,34 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
               <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-destructive" />
             </Button>
 
+            {/* User dropdown — cập nhật theo Supabase */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="" />
+                    <AvatarImage src={avatarUrl} />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      NV
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:inline">Nguyễn Văn A</span>
+                  <span className="hidden md:inline max-w-[160px] truncate">
+                    {displayName}
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate(`/dashboard/${role}/profile`)}>
+                <DropdownMenuItem onClick={goProfile}>
                   <User className="mr-2 h-4 w-4" />
                   Hồ sơ
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={goSettings}>
                   <Settings className="mr-2 h-4 w-4" />
                   Cài đặt
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/")}>
+                <DropdownMenuItem onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Đăng xuất
                 </DropdownMenuItem>
@@ -230,9 +268,7 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

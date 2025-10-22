@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,6 +9,77 @@ import { Heart, Bell, Calendar, MapPin, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MyList = () => {
+  const navigate = useNavigate();
+  const [role, setRole] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  // 🔐 Chỉ cho phép role === 'user'
+  useEffect(() => {
+    const checkRole = async () => {
+      try {
+        // 1) Lấy user hiện tại
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData.user;
+
+        // Nếu vì lý do nào đó chưa có session (phòng khi chưa bọc RequireAuth)
+        if (!user) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        // 2) Ưu tiên đọc role từ user_metadata
+        let userRole =
+          (user.user_metadata as any)?.role ||
+          (user.app_metadata as any)?.role ||
+          null;
+
+        // 3) (Tuỳ chọn) Nếu bạn có bảng profiles thì có thể đọc từ DB:
+        // const { data: profile } = await supabase
+        //   .from("profiles")
+        //   .select("role")
+        //   .eq("id", user.id)
+        //   .maybeSingle();
+        // if (profile?.role) userRole = profile.role;
+
+        // 4) Nếu không tìm thấy role -> coi như guest
+        if (!userRole) userRole = "guest";
+
+        // 5) Không phải user → quay về trang chủ
+        if (userRole !== "user") {
+          navigate("/", { replace: true });
+          return;
+        }
+
+        setRole(userRole);
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkRole();
+  }, [navigate]);
+
+  if (checking) {
+    // Loading nhẹ khi kiểm tra role
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="container mx-auto px-4">
+          <div className="h-9 w-40 animate-pulse rounded bg-muted mb-4" />
+          <div className="h-5 w-72 animate-pulse rounded bg-muted/70" />
+          <div className="mt-8 grid gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="h-32 rounded-lg bg-muted animate-pulse" />
+              <div className="h-32 rounded-lg bg-muted animate-pulse" />
+              <div className="h-32 rounded-lg bg-muted animate-pulse" />
+            </div>
+            <div className="h-60 rounded-lg bg-muted animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Đến đây chắc chắn role === 'user'
   const savedOpportunities = [
     {
       id: "1",
@@ -39,6 +114,7 @@ const MyList = () => {
   ];
 
   const upcomingDeadlines = savedOpportunities
+    .slice()
     .sort((a, b) => a.daysLeft - b.daysLeft)
     .slice(0, 3);
 
@@ -216,3 +292,4 @@ const MyList = () => {
 };
 
 export default MyList;
+  
