@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { MultiSelectInput } from "@/components/ui/multi-select-input";
 import {
   Table,
   TableBody,
@@ -35,6 +36,31 @@ import { Textarea } from "@/components/ui/textarea";
 const ManageOpportunities = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [fields, setFields] = useState<string[]>([]);
+  const [levels, setLevels] = useState<string[]>([]);
+
+  const fieldSuggestions = [
+    "CNTT",
+    "Kinh tế",
+    "Kỹ thuật",
+    "Y khoa",
+    "Luật",
+    "Giáo dục",
+    "Nghệ thuật",
+    "Khoa học tự nhiên",
+    "Khoa học xã hội",
+    "Nông nghiệp",
+    "Tất cả ngành",
+  ];
+
+  const levelSuggestions = [
+    "Đại học",
+    "Thạc sĩ",
+    "Tiến sĩ",
+    "Cao đẳng",
+    "Trung cấp",
+    "Tất cả bậc",
+  ];
 
   const menuItems = [
     { label: "Tổng quan", path: "/dashboard/admin", icon: LayoutDashboard },
@@ -103,34 +129,23 @@ const ManageOpportunities = () => {
                     <Input id="deadline" type="date" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="field">Ngành</Label>
-                    <Select>
-                      <SelectTrigger id="field">
-                        <SelectValue placeholder="Chọn ngành" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="it">Công nghệ thông tin</SelectItem>
-                        <SelectItem value="business">Kinh doanh</SelectItem>
-                        <SelectItem value="engineering">Kỹ thuật</SelectItem>
-                        <SelectItem value="all">Tất cả ngành</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="level">Bậc học</Label>
-                    <Select>
-                      <SelectTrigger id="level">
-                        <SelectValue placeholder="Chọn bậc" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="undergraduate">Đại học</SelectItem>
-                        <SelectItem value="graduate">Sau đại học</SelectItem>
-                        <SelectItem value="all">Tất cả bậc</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="field">Ngành học</Label>
+                  <MultiSelectInput
+                    value={fields}
+                    onChange={setFields}
+                    placeholder="Chọn hoặc nhập ngành học..."
+                    suggestions={fieldSuggestions}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="level">Bậc học</Label>
+                  <MultiSelectInput
+                    value={levels}
+                    onChange={setLevels}
+                    placeholder="Chọn hoặc nhập bậc học..."
+                    suggestions={levelSuggestions}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="description">Mô tả ngắn</Label>
