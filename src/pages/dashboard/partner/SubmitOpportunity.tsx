@@ -191,16 +191,6 @@ const SubmitOpportunity = () => {
                 </p>
               </div>
 
-              {/* Requirements */}
-              <div className="space-y-2">
-                <Label htmlFor="requirements">Yêu cầu ứng viên</Label>
-                <Textarea
-                  id="requirements"
-                  placeholder="VD: GPA tối thiểu 3.0/4.0, có chứng chỉ tiếng Anh..."
-                  rows={4}
-                />
-              </div>
-
               {/* External Link - Disabled */}
               <div className="space-y-2">
                 <Label htmlFor="link" className="text-muted-foreground">
