@@ -38,21 +38,31 @@ interface DashboardLayoutProps {
   role: "user" | "partner" | "admin";
 }
 
+const initialsFrom = (name?: string) => {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // ----- Auth (để hiện đúng tên/ảnh sau khi cập nhật hồ sơ)
+  // ----- Auth (hiển thị tên/ảnh chuẩn theo Supabase)
   const { user } = useAuth();
   const [u, setU] = useState(user);
 
   useEffect(() => {
-    const refresh = async () => {
+    let mounted = true;
+    (async () => {
       const { data } = await supabase.auth.getUser();
-      setU(data.user ?? null);
+      if (mounted) setU(data.user ?? null);
+    })();
+    return () => {
+      mounted = false;
     };
-    refresh();
   }, [user]);
 
   const meta: any = u?.user_metadata || {};
@@ -62,14 +72,8 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
     [meta.given_name, meta.family_name].filter(Boolean).join(" ") ||
     u?.email ||
     "";
-  const avatarUrl = meta.avatar_url || meta.picture || "";
-  const initials = (() => {
-    const name = displayName || "U";
-    const parts = name.trim().split(/\s+/);
-    if (!parts.length) return "U";
-    if (parts.length === 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  })();
+  const avatarUrl = (meta.avatar_url || meta.picture || "").trim();
+  const initials = initialsFrom(displayName || "U");
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -88,7 +92,7 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
   const goSettings = () => navigate(`/dashboard/${role}`);
   const logout = async () => {
     await supabase.auth.signOut();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -99,7 +103,6 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
             <span className="text-sm font-bold text-primary-foreground">H</span>
           </div>
-          <span className="font-semibold">HBCSV</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4">
@@ -218,7 +221,7 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
               <Menu className="h-5 w-5" />
             </Button>
 
-            {/* Search bar (giữ để tránh import thừa) */}
+            {/* Search bar (để tránh import thừa; bạn có thể ẩn nếu chưa dùng) */}
             <div className="hidden md:flex items-center gap-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input placeholder="Tìm kiếm..." className="w-72" />
@@ -231,12 +234,12 @@ const DashboardLayout = ({ children, menuItems, role }: DashboardLayoutProps) =>
               <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-destructive" />
             </Button>
 
-            {/* User dropdown — cập nhật theo Supabase */}
+            {/* User dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={avatarUrl} />
+                    {avatarUrl ? <AvatarImage src={avatarUrl} /> : <AvatarImage src="" />}
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {initials}
                     </AvatarFallback>

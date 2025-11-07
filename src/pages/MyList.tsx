@@ -1,295 +1,193 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient";
-
+// src/pages/MyList.tsx
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Bell, Calendar, MapPin, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Bell, Heart, Check, Pencil, Trash2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
-const MyList = () => {
-  const navigate = useNavigate();
-  const [role, setRole] = useState<string | null>(null);
-  const [checking, setChecking] = useState(true);
-
-  // 🔐 Chỉ cho phép role === 'user'
-  useEffect(() => {
-    const checkRole = async () => {
-      try {
-        // 1) Lấy user hiện tại
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData.user;
-
-        // Nếu vì lý do nào đó chưa có session (phòng khi chưa bọc RequireAuth)
-        if (!user) {
-          navigate("/login", { replace: true });
-          return;
-        }
-
-        // 2) Ưu tiên đọc role từ user_metadata
-        let userRole =
-          (user.user_metadata as any)?.role ||
-          (user.app_metadata as any)?.role ||
-          null;
-
-        // 3) (Tuỳ chọn) Nếu bạn có bảng profiles thì có thể đọc từ DB:
-        // const { data: profile } = await supabase
-        //   .from("profiles")
-        //   .select("role")
-        //   .eq("id", user.id)
-        //   .maybeSingle();
-        // if (profile?.role) userRole = profile.role;
-
-        // 4) Nếu không tìm thấy role -> coi như guest
-        if (!userRole) userRole = "guest";
-
-        // 5) Không phải user → quay về trang chủ
-        if (userRole !== "user") {
-          navigate("/", { replace: true });
-          return;
-        }
-
-        setRole(userRole);
-      } finally {
-        setChecking(false);
-      }
-    };
-
-    checkRole();
-  }, [navigate]);
-
-  if (checking) {
-    // Loading nhẹ khi kiểm tra role
-    return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="container mx-auto px-4">
-          <div className="h-9 w-40 animate-pulse rounded bg-muted mb-4" />
-          <div className="h-5 w-72 animate-pulse rounded bg-muted/70" />
-          <div className="mt-8 grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-4">
-              <div className="h-32 rounded-lg bg-muted animate-pulse" />
-              <div className="h-32 rounded-lg bg-muted animate-pulse" />
-              <div className="h-32 rounded-lg bg-muted animate-pulse" />
-            </div>
-            <div className="h-60 rounded-lg bg-muted animate-pulse" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Đến đây chắc chắn role === 'user'
-  const savedOpportunities = [
+export default function MyList() {
+  const [items, setItems] = useState([
     {
       id: "1",
       title: "Học bổng Chính phủ Nhật Bản MEXT 2025",
       organization: "Chính phủ Nhật Bản",
-      type: "Học bổng",
-      deadline: "31/12/2024",
+      deadline: "2024-12-31",
       location: "Nhật Bản",
-      badge: "new" as const,
-      daysLeft: 15,
+      checklist: [
+        { label: "Đọc yêu cầu", done: false },
+        { label: "Viết essay", done: false },
+        { label: "Chuẩn bị giấy tờ", done: false },
+        { label: "Nộp hồ sơ", done: false },
+      ],
+      note: "",
+      reminderSet: false
     },
     {
       id: "2",
       title: "Học bổng VinUni Excellence 2025",
       organization: "VinUniversity",
-      type: "Học bổng",
-      deadline: "10/01/2025",
+      deadline: "2025-01-10",
       location: "Hà Nội",
-      badge: "closing-soon" as const,
-      daysLeft: 7,
-    },
-    {
-      id: "3",
-      title: "Đại sứ Thương hiệu Coca-Cola 2025",
-      organization: "Coca-Cola Việt Nam",
-      type: "Đại sứ",
-      deadline: "20/12/2024",
-      location: "Toàn quốc",
-      badge: "new" as const,
-      daysLeft: 10,
-    },
-  ];
+      checklist: [
+        { label: "Đọc yêu cầu", done: true },
+        { label: "Viết essay", done: false },
+        { label: "Chuẩn bị giấy tờ", done: false },
+        { label: "Nộp hồ sơ", done: false },
+      ],
+      note: "Essay nên nhấn mạnh về leadership.",
+      reminderSet: true
+    }
+  ]);
+  // Chọn note để edit
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
 
-  const upcomingDeadlines = savedOpportunities
-    .slice()
-    .sort((a, b) => a.daysLeft - b.daysLeft)
-    .slice(0, 3);
+  const handleToggleChecklist = (schId, idx) => {
+    setItems(items =>
+      items.map(item =>
+        item.id === schId
+          ? {
+              ...item,
+              checklist: item.checklist.map((step, i) =>
+                i === idx ? { ...step, done: !step.done } : step
+              )
+            }
+          : item
+      )
+    );
+  };
+
+  const handleEditNote = schId => {
+    setEditingNoteId(schId);
+    const item = items.find(item => item.id === schId);
+    setNoteDraft(item?.note ?? "");
+  };
+
+  const handleSaveNote = schId => {
+    setItems(items =>
+      items.map(item =>
+        item.id === schId ? { ...item, note: noteDraft } : item
+      )
+    );
+    setEditingNoteId(null);
+    setNoteDraft("");
+  };
+
+  const handleToggleReminder = schId => {
+    setItems(items =>
+      items.map(item =>
+        item.id === schId ? { ...item, reminderSet: !item.reminderSet } : item
+      )
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold">Danh sách đã lưu</h1>
-          <p className="text-muted-foreground">
-            Quản lý các cơ hội bạn quan tâm ({savedOpportunities.length} cơ hội)
-          </p>
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main List */}
-          <div className="lg:col-span-2">
-            {savedOpportunities.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Heart className="mb-4 h-16 w-16 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-semibold">
-                    Chưa có cơ hội nào được lưu
-                  </h3>
-                  <p className="mb-6 text-sm text-muted-foreground">
-                    Khám phá và lưu các cơ hội phù hợp với bạn
-                  </p>
-                  <Link to="/opportunities">
-                    <Button>Khám phá cơ hội</Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {savedOpportunities.map((opportunity) => (
-                  <Card key={opportunity.id} className="overflow-hidden">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        {/* Info */}
-                        <div className="flex-1">
-                          <div className="mb-2 flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {opportunity.type}
-                            </Badge>
-                            {opportunity.badge === "new" && (
-                              <Badge variant="default">Mới</Badge>
-                            )}
-                            {opportunity.badge === "closing-soon" && (
-                              <Badge variant="destructive">Sắp hết hạn</Badge>
-                            )}
-                          </div>
-
-                          <Link to={`/opportunities/${opportunity.id}`}>
-                            <h3 className="mb-2 text-lg font-semibold transition-colors hover:text-primary">
-                              {opportunity.title}
-                            </h3>
-                          </Link>
-
-                          <p className="mb-3 text-sm text-muted-foreground">
-                            {opportunity.organization}
-                          </p>
-
-                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-primary" />
-                              <span>Hạn: {opportunity.deadline}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-primary" />
-                              <span>{opportunity.location}</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-2">
-                            <span
-                              className={`text-sm font-medium ${
-                                opportunity.daysLeft <= 7
-                                  ? "text-destructive"
-                                  : "text-muted-foreground"
-                              }`}
-                            >
-                              Còn {opportunity.daysLeft} ngày
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2 md:flex-col">
-                          <Button variant="outline" size="sm" className="flex-1">
-                            <Bell className="mr-2 h-4 w-4" />
-                            Nhắc hạn
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Bỏ lưu
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            {savedOpportunities.length > 0 && (
-              <div className="mt-8 text-center">
-                <Link to="/apply/1">
-                  <Button size="lg">Bắt đầu quy trình nộp hồ sơ</Button>
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar - Upcoming Deadlines */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-20">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    Deadline sắp tới
-                  </h3>
-
-                  {upcomingDeadlines.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      Chưa có deadline nào
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {upcomingDeadlines.map((opp) => (
-                        <div
-                          key={opp.id}
-                          className="rounded-lg border border-border p-4"
+        <h1 className="mb-4 text-3xl font-bold">Scholarship Planner</h1>
+        <div className="grid gap-6 md:grid-cols-2">
+          {items.map(item => (
+            <Card key={item.id}>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>{item.title}</CardTitle>
+                  <div>
+                    <Badge variant="outline">{item.organization}</Badge>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Deadline: {item.deadline}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" />
+                    <Button
+                      size="icon"
+                      variant={item.reminderSet ? "default" : "outline"}
+                      onClick={() => handleToggleReminder(item.id)}
+                    >
+                      {item.reminderSet ? <Check className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Checklist */}
+                <div>
+                  <div className="font-semibold mb-2">Checklist chuẩn bị</div>
+                  <ul>
+                    {item.checklist.map((step, idx) => (
+                      <li key={idx} className="flex items-center gap-2 mb-2">
+                        <input
+                          type="checkbox"
+                          checked={step.done}
+                          onChange={() => handleToggleChecklist(item.id, idx)}
+                          className="accent-primary h-4 w-4"
+                        />
+                        <span className={step.done ? "line-through text-muted-foreground" : ""}>
+                          {step.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {/* Notes */}
+                <div className="mt-4">
+                  <div className="font-semibold mb-2 flex items-center justify-between">
+                    <span>Ghi chú</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEditNote(item.id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {editingNoteId === item.id ? (
+                    <div>
+                      <Textarea
+                        value={noteDraft}
+                        onChange={e => setNoteDraft(e.target.value)}
+                        rows={3}
+                        className="resize-none"
+                        placeholder="Ghi lại điểm quan trọng hoặc mẹo chuẩn bị hồ sơ..."
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <Button size="sm" onClick={() => handleSaveNote(item.id)}>
+                          Lưu
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingNoteId(null)}
                         >
-                          <Link to={`/opportunities/${opp.id}`}>
-                            <h4 className="mb-2 line-clamp-2 text-sm font-semibold hover:text-primary">
-                              {opp.title}
-                            </h4>
-                          </Link>
-                          <p className="mb-2 text-xs text-muted-foreground">
-                            {opp.deadline}
-                          </p>
-                          <div
-                            className={`text-xs font-medium ${
-                              opp.daysLeft <= 7
-                                ? "text-destructive"
-                                : "text-primary"
-                            }`}
-                          >
-                            Còn {opp.daysLeft} ngày
-                          </div>
-                        </div>
-                      ))}
+                          Hủy
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-muted rounded p-2 min-h-[38px] text-sm">
+                      {item.note ? (
+                        <span>{item.note}</span>
+                      ) : (
+                        <span className="text-muted-foreground">Chưa có ghi chú</span>
+                      )}
                     </div>
                   )}
-
-                  <div className="mt-6 rounded-lg bg-muted/50 p-4">
-                    <p className="text-sm text-muted-foreground">
-                      💡 <strong>Mẹo:</strong> Đặt nhắc hạn để không bỏ lỡ cơ hội
-                      quan trọng!
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </div>
+                {/* Remove Option */}
+                <div className="mt-6 flex justify-end">
+                  <Button variant="ghost" size="icon" className="text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </div>
   );
-};
-
-export default MyList;
-  
+}

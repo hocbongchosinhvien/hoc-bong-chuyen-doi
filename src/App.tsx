@@ -43,6 +43,9 @@ import NotFound from "./pages/NotFound";
 import AuthGate from "@/components/auth/AuthGate";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
+// NEW: OAuth callback (để set role + lưu profile sau Google login)
+import OAuthCallback from "./pages/auth/OAuthCallback";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -62,11 +65,21 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/opportunities" element={<Opportunities />} />
               <Route path="/opportunities/:id" element={<OpportunityDetail />} />
-              <Route path="/my-list" element={<MyList />} />
+              <Route
+                path="/my-list"
+                element={
+                  <RequireAuth>
+                    <MyList />
+                  </RequireAuth>
+                }
+              />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/apply/:id" element={<ApplyWizard />} />
+
+              {/* OAuth callback (Google) */}
+              <Route path="/auth/callback" element={<OAuthCallback />} />
 
               {/* User Dashboard (Protected) */}
               <Route

@@ -33,6 +33,20 @@ type ProfileForm = {
   avatar_url?: string;
 };
 
+const toYmd = (d?: string | Date | null) => {
+  if (!d) return "";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dt.getTime())) return "";
+  return dt.toISOString().slice(0, 10);
+};
+
+const initialsFrom = (name?: string) => {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 const UserProfile = () => {
   const menuItems = [
     { label: "Dashboard", path: "/dashboard/user", icon: LayoutDashboard },
@@ -60,84 +74,131 @@ const UserProfile = () => {
     avatar_url: "",
   });
 
-  // ===== Load user info from Supabase
+  // ===== Load profile: ưu tiên bảng user_profiles, thiếu thì fallback metadata
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      try {
+        const { data: ures, error: uErr } = await supabase.auth.getUser();
+        if (uErr) throw uErr;
+        const user = ures.user;
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-      const meta: any = user.user_metadata || {};
-      setForm({
-        full_name:
-          meta.full_name ||
-          meta.name ||
-          [meta.given_name, meta.family_name].filter(Boolean).join(" ") ||
-          "",
-        email: user.email || "",
-        phone: meta.phone || "",
-        dob: meta.dob || "",
-        university: meta.university || "",
-        major: meta.major || "",
-        bio: meta.bio || "",
-        avatar_url: meta.avatar_url || meta.picture || "",
-      });
-      setLoading(false);
+        const meta: any = user.user_metadata || {};
+        // base theo metadata trước:
+        let next: ProfileForm = {
+          full_name:
+            meta.full_name ||
+            meta.name ||
+            [meta.given_name, meta.family_name].filter(Boolean).join(" ") ||
+            "",
+          email: user.email || "",
+          phone: meta.phone || "",
+          dob: toYmd(meta.dob) || "",
+          university: meta.university || "",
+          major: meta.major || "",
+          bio: meta.bio || "",
+          avatar_url: meta.avatar_url || meta.picture || "",
+        };
+
+        // đọc từ bảng user_profiles để override
+        const { data: p, error: pErr } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!pErr && p) {
+          next = {
+            ...next,
+            full_name: p.full_name ?? next.full_name,
+            phone: p.phone ?? next.phone,
+            dob: toYmd(p.dob) || next.dob,
+            university: p.university ?? next.university,
+            major: p.major ?? next.major,
+            bio: p.bio ?? next.bio,
+            avatar_url: p.avatar_url ?? next.avatar_url,
+          };
+        }
+
+        setForm(next);
+      } catch (e) {
+        console.error("Load profile error:", e);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
-  const initials = (() => {
-    const name = form.full_name || form.email || "U";
-    const parts = name.trim().split(/\s+/);
-    if (!parts.length) return "U";
-    if (parts.length === 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  })();
+  const initials = initialsFrom(form.full_name || form.email);
 
   // ===== Helpers
-  const onChange = (key: keyof ProfileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((f) => ({ ...f, [key]: e.target.value }));
-  };
+  const onChange =
+    (key: keyof ProfileForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setForm((f) => ({ ...f, [key]: e.target.value }));
+    };
 
-  // ===== Save profile (metadata + email if changed)
+  // ===== Save profile (metadata + bảng SQL + email nếu đổi)
   const saveProfile = async () => {
     setSaving(true);
     try {
-      // 1) Update metadata
+      const { data: { user }, error: uErr } = await supabase.auth.getUser();
+      if (uErr) throw uErr;
+      if (!user) throw new Error("Bạn chưa đăng nhập.");
+
+      // 1) Cập nhật vào Auth.user_metadata (để Topbar, avatar... đọc nhanh) + email nếu đổi
       const metaUpdate: any = {
         full_name: form.full_name,
         phone: form.phone,
-        dob: form.dob,
+        dob: form.dob,          // yyyy-mm-dd
         university: form.university,
         major: form.major,
         bio: form.bio,
-        avatar_url: form.avatar_url,
       };
+      if (form.avatar_url?.trim()) metaUpdate.avatar_url = form.avatar_url.trim();
 
-      // Update user metadata
-      const { error: metaErr } = await supabase.auth.updateUser({ data: metaUpdate });
-      if (metaErr) throw metaErr;
-
-      // 2) Update email if changed (Supabase sẽ gửi email xác minh)
-      const { data: current } = await supabase.auth.getUser();
-      if (current.user?.email && current.user.email !== form.email && form.email) {
-        const { error: emailErr } = await supabase.auth.updateUser({ email: form.email });
-        if (emailErr) throw emailErr;
-        alert("Email đã được cập nhật. Vui lòng kiểm tra hộp thư để xác minh.");
-      } else {
-        alert("Đã lưu thay đổi hồ sơ.");
+      const updatePayload: any = { data: metaUpdate };
+      if (form.email && form.email !== user.email) {
+        updatePayload.email = form.email; // sẽ yêu cầu xác minh email mới
       }
-    } catch (e: any) {
-      alert(e?.message || "Lưu thất bại. Vui lòng thử lại.");
+
+      const { error: mErr } = await supabase.auth.updateUser(updatePayload);
+      if (mErr) throw mErr;
+
+      // 2) Upsert vào bảng SQL public.user_profiles (để bạn thấy trong Tables)
+      const row: any = {
+        user_id: user.id,
+        full_name: form.full_name?.trim() || null,
+        phone: form.phone?.trim() || null,
+        dob: form.dob ? toYmd(form.dob) : null,
+        university: form.university?.trim() || null,
+        major: form.major?.trim() || null,
+        bio: form.bio?.trim() || null,
+      };
+      if (form.avatar_url?.trim()) row.avatar_url = form.avatar_url.trim();
+
+      const { error: pErr } = await supabase
+        .from("user_profiles")
+        .upsert(row, { onConflict: "user_id" });
+      if (pErr) throw pErr;
+
+      // 3) Refetch user để UI cập nhật ngay
+      await supabase.auth.getUser();
+
+      alert("Đã lưu thay đổi hồ sơ.");
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Lưu hồ sơ thất bại.");
     } finally {
       setSaving(false);
     }
   };
 
-  // ===== Change password
+
+
   const changePassword = async () => {
     if (pwNew.length < 6) return alert("Mật khẩu tối thiểu 6 ký tự.");
     if (pwNew !== pwNew2) return alert("Xác nhận mật khẩu không khớp.");
@@ -162,12 +223,12 @@ const UserProfile = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Optional: hiển thị tạm thời
+    // Preview tạm (local)
     const localUrl = URL.createObjectURL(file);
     setForm((f) => ({ ...f, avatar_url: localUrl }));
 
     try {
-      // Yêu cầu bạn đã tạo bucket 'avatars' (Public hoặc dùng signed URL)
+      // Cần có bucket 'avatars' (Public hoặc Signed URL)
       const fileExt = file.name.split(".").pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `public/${fileName}`;
@@ -178,11 +239,13 @@ const UserProfile = () => {
 
       if (upErr) throw upErr;
 
-      // Lấy public URL
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      // Public URL
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
       const publicUrl = urlData.publicUrl;
 
-      // Lưu vào metadata
+      // Cập nhật metadata ngay để topbar dùng được
       const { error: metaErr } = await supabase.auth.updateUser({
         data: { avatar_url: publicUrl },
       });
@@ -192,9 +255,7 @@ const UserProfile = () => {
       alert("Đã cập nhật ảnh đại diện.");
     } catch (e: any) {
       alert(e?.message || "Tải ảnh thất bại. Bạn đã tạo bucket 'avatars' chưa?");
-      // Nếu thất bại thì giữ nguyên preview local cho đến khi reload
     } finally {
-      // clean
       e.target.value = "";
     }
   };
@@ -228,12 +289,18 @@ const UserProfile = () => {
             <CardContent className="p-6">
               <div className="flex flex-col items-center text-center">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={form.avatar_url} />
+                  {form.avatar_url?.trim() ? (
+                    <AvatarImage src={form.avatar_url} alt={form.full_name} />
+                  ) : (
+                    <AvatarImage src="" />
+                  )}
                   <AvatarFallback className="bg-primary text-2xl text-primary-foreground">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <h3 className="mt-4 text-lg font-semibold">{form.full_name || "Chưa có tên"}</h3>
+                <h3 className="mt-4 text-lg font-semibold">
+                  {form.full_name || "Chưa có tên"}
+                </h3>
                 <p className="text-sm text-muted-foreground">{form.email}</p>
                 <Button variant="outline" size="sm" className="mt-4" onClick={onPickAvatar}>
                   <Upload className="mr-2 h-4 w-4" />
